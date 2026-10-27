@@ -1,0 +1,26 @@
+Evaluation brackets: dynamic variable names, and extra brackets re-evaluate.
+-- origin --
+spec
+-- script.mrc --
+alias test {
+  set %a [ $+ b ] 1
+  set %a [ $+ c ] 2
+  echo -s ab = %ab
+  echo -s ac = %ac
+  unset %a [ $+ b ] %a [ $+ c ]
+  echo -s gone = %ab %ac
+  set %x % $+ y
+  set %y Hiya!
+  echo -s [ [ %x ] ]
+  echo -s [ %x ]
+  var %nick = bob
+  set %seen. [ $+ [ %nick ] ] yes
+  echo -s %seen.bob
+}
+-- output --
+ab = 1
+ac = 2
+gone =
+Hiya!
+%y
+yes

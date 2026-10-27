@@ -1,0 +1,15 @@
+$gettok returns the Nth token, counts with 0, and takes ranges and negatives.
+-- origin --
+spec
+-- script.mrc --
+alias test {
+  echo -s $gettok(a.b.c,2,46)
+  echo -s $gettok(a.b.c,0,46)
+  echo -s $gettok(a.b.c,-1,46)
+  echo -s $gettok(a.b.c,2-,46)
+}
+-- output --
+b
+3
+c
+b.c

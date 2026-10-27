@@ -1,0 +1,53 @@
+if/elseif/else, combined conditions, ! negation, $v1/$v2 and operators.
+-- origin --
+spec
+-- script.mrc --
+alias number {
+  if ($1 == 1) echo -s One
+  elseif ($1 == 2) echo -s Two
+  else echo -s Unknown number!
+}
+alias range {
+  if (($1 > 0) && ($1 < 10)) {
+    if ($1 < 5) echo -s less than five
+    else echo -s greater than five
+  }
+  else echo -s out of bounds
+}
+alias test {
+  number 1
+  number 2
+  number 7
+  range 3
+  range 8
+  range 12
+  if (!%nothing) echo -s x has no value
+  if (text isin sometext) echo -s $v1 in $v2
+  if (*.com iswm irc.example.com) echo -s wild
+  if (3 // 9) echo -s multiple
+  if (2 \\ 9) echo -s not multiple
+  if (5 isnum 1-10) echo -s in range
+  if (Abc === abc) echo -s wrong
+  else echo -s case-sensitive differs
+  if (ABC == abc) echo -s case-insensitive equal
+  if (10 > 9) echo -s numeric compare
+  if (b !isin abc) echo -s wrong
+  else echo -s negated operator
+}
+-- output --
+One
+Two
+Unknown number!
+less than five
+greater than five
+out of bounds
+x has no value
+text in sometext
+wild
+multiple
+not multiple
+in range
+case-sensitive differs
+case-insensitive equal
+numeric compare
+negated operator

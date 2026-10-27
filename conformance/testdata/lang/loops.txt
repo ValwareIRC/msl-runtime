@@ -1,0 +1,25 @@
+while with /break and /continue, and /goto loops.
+-- origin --
+spec
+-- script.mrc --
+alias test {
+  var %i = 1
+  while (%i <= 10) {
+    inc %i
+    if (%i == 3) continue
+    if (%i > 5) break
+    echo -s while %i
+  }
+  var %x = 1
+  :next
+  echo -s item %x
+  inc %x
+  if (%x < 4) goto next
+}
+-- output --
+while 2
+while 4
+while 5
+item 1
+item 2
+item 3

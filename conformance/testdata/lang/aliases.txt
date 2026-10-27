@@ -1,0 +1,37 @@
+Custom identifiers with $prop and $isid, $result, local variables, and math assignment.
+-- origin --
+spec
+-- script.mrc --
+alias add {
+  %x = $1 + $2
+  if ($prop == negative) return $calc(-1 * %x)
+  return %x
+}
+alias who { return $iif($isid,identifier,command) }
+alias scope {
+  var %local = inner
+  echo -s %local
+}
+alias test {
+  echo -s Total is: $add(1,2)
+  echo -s Total is: $add(1,2).negative
+  echo -s $who
+  who
+  echo -s $result
+  var %local = outer
+  scope
+  echo -s %local
+  set %y 1 + 2
+  echo -s y: %y
+  set -n %z 1 + 2
+  echo -s z: %z
+}
+-- output --
+Total is: 3
+Total is: -3
+identifier
+command
+inner
+outer
+y: 3
+z: 1 + 2

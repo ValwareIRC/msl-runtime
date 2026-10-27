@@ -1,0 +1,22 @@
+:error catches script errors, $error holds the message, /reseterror clears it, $$ halts.
+-- origin --
+spec
+-- script.mrc --
+alias fail { set }
+alias guarded {
+  fail
+  echo -s not reached
+  :error
+  echo -s caught: $error
+  reseterror
+}
+alias need { echo -s got $$1 }
+alias test {
+  guarded
+  echo -s continues
+  need
+  echo -s after need
+}
+-- output --
+caught: /set: invalid parameters (line 1, script.mrc)
+continues

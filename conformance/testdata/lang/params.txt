@@ -1,0 +1,18 @@
+Positional parameters: $N, $N-, $N-M, $0, trailing text after $N, and $+.
+-- origin --
+spec
+-- script.mrc --
+alias test { slap sheepy a large trout }
+alias slap {
+  echo -s slaps $1 around with $2-
+  echo -s $2-3
+  echo -s $0
+  echo -s laughs at $1's joke
+  echo -s Hel $+ lo th $+ ere $+ !
+}
+-- output --
+slaps sheepy around with a large trout
+a large
+4
+laughs at sheepy's joke
+Hello there!

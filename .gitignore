@@ -1,0 +1,17 @@
+# Build output
+/bin/
+*.exe
+*.exe~
+*.test
+*.out
+
+# Runtime state written to $mircdir when scripts run from the repo
+vars.ini
+users.ini
+*.log
+
+# Editor and IDE files
+.prism/
+.vscode/
+.idea/
+*.swp

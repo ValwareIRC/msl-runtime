@@ -1,0 +1,9 @@
+{
+  "nick": "mslrt",
+  "altnick": "mslrt_",
+  "realname": "mIRC script runtime",
+  "scripts": [
+    "scripts/*.mrc"
+  ],
+  "servers": []
+}

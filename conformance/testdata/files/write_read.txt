@@ -1,0 +1,35 @@
+/write with -c, -l, -i, -d and -s, $read by line, scan and wildcard, $lines, $readn, and INI files.
+-- origin --
+spec
+-- script.mrc --
+alias test {
+  write -c t.txt first line
+  write t.txt mirc rocks
+  write t.txt third
+  write -il2 t.txt inserted
+  echo -s lines: $lines(t.txt)
+  echo -s r: $read(t.txt, 2)
+  echo -s r: $read(t.txt, s, mirc) at $readn
+  echo -s r: $read(t.txt, w, th*)
+  write -dl1 t.txt
+  write -l1 t.txt replaced
+  echo -s r: $read(t.txt, n, 1) / $read(t.txt, 3)
+  write t.txt $!me
+  echo -s r: $read(t.txt, n, 4) / $read(t.txt, nt, 4)
+  writeini t.ini Section key value one
+  writeini t.ini Section other 2
+  echo -s ini: $readini(t.ini, Section, key) $ini(t.ini, 0) $ini(t.ini, Section, 0) $ini(t.ini, 1, 2)
+  remini t.ini Section key
+  echo -s ini: $ini(t.ini, Section, 0) $iif($readini(t.ini, Section, key) == $null,gone)
+  echo -s exists: $isfile(t.txt) $isfile(nope.txt) $nopath(a/b/c.txt)
+}
+-- output --
+lines: 4
+r: inserted
+r: rocks at 3
+r: third
+r: replaced / third
+r: $me / $me
+ini: value one 1 2 other
+ini: 1 gone
+exists: $true $false c.txt
