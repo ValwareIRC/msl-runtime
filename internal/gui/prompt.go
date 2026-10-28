@@ -3,13 +3,13 @@
 package gui
 
 import (
+	"image"
 	"image/color"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
-	"gioui.org/app"
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
@@ -62,7 +62,7 @@ func (g *GUI) Prompt(p ui.Prompt, done func([]string, bool)) {
 	if p.Kind != "input" {
 		height = 380
 	}
-	g.open("p:"+title, &win{prompt: ps}, app.Title(title), app.Size(unit.Dp(420), unit.Dp(height)))
+	g.open("p:"+title, &win{prompt: ps}, title, image.Pt(420, height))
 }
 
 // listDir returns the entries a file prompt offers: folders first, then files.

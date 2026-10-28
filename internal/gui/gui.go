@@ -82,6 +82,12 @@ type win struct {
 	lastDown    time.Time
 	inside      bool
 	closing     bool
+
+	// title and size are the options last applied to the native window;
+	// framed records that it has drawn a frame, so Gio knows its real size.
+	title  string
+	size   image.Point
+	framed bool
 }
 
 // ctrlState is the widget state of one dialog control.
@@ -134,19 +140,27 @@ func dbu(d *ui.Dialog, x, y int) (int, int) {
 
 func (g *GUI) DialogOpened(d *ui.Dialog) {
 	snap := copyDialog(d)
-	w, h := dbu(snap, snap.W, snap.H)
+	g.open("d:"+strings.ToLower(snap.Name), &win{dialog: snap, ctrls: map[int]*ctrlState{}, menuBtns: map[int]*widget.Clickable{}},
+		dialogTitle(snap), dialogSize(snap))
+}
+
+func dialogTitle(d *ui.Dialog) string {
+	if d.Title == "" {
+		return d.Name
+	}
+	return d.Title
+}
+
+// dialogSize is a dialog's window size, including its menu bar.
+func dialogSize(d *ui.Dialog) image.Point {
+	w, h := dbu(d, d.W, d.H)
 	if w <= 0 {
 		w = 320
 	}
 	if h <= 0 {
 		h = 220
 	}
-	title := snap.Title
-	if title == "" {
-		title = snap.Name
-	}
-	g.open("d:"+strings.ToLower(snap.Name), &win{dialog: snap, ctrls: map[int]*ctrlState{}, menuBtns: map[int]*widget.Clickable{}},
-		app.Title(title), app.Size(unit.Dp(w), unit.Dp(h+menuHeight(snap))))
+	return image.Pt(w, h+menuHeight(d))
 }
 
 func menuHeight(d *ui.Dialog) int {
@@ -163,7 +177,7 @@ func (g *GUI) DialogChanged(d *ui.Dialog) {
 		wn.mu.Lock()
 		wn.dialog = copyDialog(d)
 		wn.mu.Unlock()
-		wn.w.Option(app.Title(d.Title))
+		wn.configure(dialogTitle(d), dialogSize(d))
 		wn.w.Invalidate()
 	}
 }
@@ -175,18 +189,30 @@ func (g *GUI) WindowOpened(w *ui.Window) {
 		return
 	}
 	snap, pic := copyWindow(w)
-	width, height := snap.W, snap.H
-	if width <= 0 {
-		width = 520
-	}
-	if height <= 0 {
-		height = 340
-	}
 	wn := &win{window: snap, pic: pic}
 	wn.lines.Axis = layout.Vertical
 	wn.editbox.SingleLine, wn.editbox.Submit = true, true
-	g.open("w:"+strings.ToLower(snap.Name), wn, app.Title(windowTitle(snap)),
-		app.Size(unit.Dp(width), unit.Dp(height)))
+	g.open("w:"+strings.ToLower(snap.Name), wn, windowTitle(snap), windowSize(snap, pic))
+}
+
+// windowSize is a custom window's size: a picture window fits its canvas
+// (and editbox), other windows take their /window size or a default.
+func windowSize(w *ui.Window, pic *image.RGBA) image.Point {
+	if w.Picture && pic != nil {
+		size := pic.Rect.Size()
+		if w.Editbox {
+			size.Y += editboxHeight
+		}
+		return size
+	}
+	size := image.Pt(w.W, w.H)
+	if size.X <= 0 {
+		size.X = 520
+	}
+	if size.Y <= 0 {
+		size.Y = 340
+	}
+	return size
 }
 
 // windowTitle is a custom window's name and title, without @ when hidden.
@@ -213,8 +239,29 @@ func (g *GUI) WindowChanged(w *ui.Window) {
 	wn.mu.Lock()
 	wn.window, wn.pic = snap, pic
 	wn.mu.Unlock()
-	wn.w.Option(app.Title(windowTitle(snap)))
+	wn.configure(windowTitle(snap), windowSize(snap, pic))
 	wn.w.Invalidate()
+}
+
+// configure applies a title and size to the native window, sending only what
+// changed so a size the user chose is kept. Gio sizes a window from the last
+// size it saw, which is zero until the first frame: an option sent alone
+// before then collapses the window, so the size goes with it.
+func (wn *win) configure(title string, size image.Point) {
+	wn.mu.Lock()
+	var opts []app.Option
+	if title != wn.title {
+		opts = append(opts, app.Title(title))
+		wn.title = title
+	}
+	if size != wn.size || (!wn.framed && len(opts) > 0) {
+		opts = append(opts, app.Size(unit.Dp(size.X), unit.Dp(size.Y)))
+		wn.size = size
+	}
+	wn.mu.Unlock()
+	if len(opts) > 0 {
+		wn.w.Option(opts...)
+	}
 }
 
 func (g *GUI) WindowClosed(w *ui.Window) { g.close("w:" + strings.ToLower(w.Name)) }
@@ -225,16 +272,17 @@ func (g *GUI) find(key string) *win {
 	return g.wins[key]
 }
 
-func (g *GUI) open(key string, wn *win, opts ...app.Option) {
+func (g *GUI) open(key string, wn *win, title string, size image.Point) {
 	g.mu.Lock()
 	if old := g.wins[key]; old != nil {
 		old.closing = true
 		old.w.Perform(system.ActionClose)
 	}
 	wn.g, wn.key, wn.w = g, key, new(app.Window)
+	wn.title, wn.size = title, size
 	g.wins[key] = wn
 	g.mu.Unlock()
-	wn.w.Option(opts...)
+	wn.w.Option(app.Title(title), app.Size(unit.Dp(size.X), unit.Dp(size.Y)))
 	go wn.loop()
 }
 
@@ -271,6 +319,7 @@ func (wn *win) loop() {
 		case app.FrameEvent:
 			gtx := app.NewContext(&ops, e)
 			wn.mu.Lock()
+			wn.framed = true
 			wn.frame(gtx)
 			wn.mu.Unlock()
 			e.Frame(gtx.Ops)
@@ -750,6 +799,9 @@ func (wn *win) layoutText(gtx layout.Context) {
 	wn.drawEditbox(gtx, editH)
 }
 
+// editboxHeight is the height of a custom window's editbox, in dp.
+const editboxHeight = 30
+
 // updateEditbox handles a custom window's editbox: typed changes go to the
 // model (for $editbox and on KEYDOWN), Enter runs on INPUT. It returns the
 // editbox height, 0 when the window has none.
@@ -790,7 +842,7 @@ func (wn *win) updateEditbox(gtx layout.Context) int {
 			g.post(func() { g.u.EditboxChanged(name, text) })
 		}
 	}
-	return gtx.Dp(30)
+	return gtx.Dp(editboxHeight)
 }
 
 // drawEditbox draws the editbox along the bottom of a custom window.
